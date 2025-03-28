@@ -1,13 +1,12 @@
 from nicegui import ui, app
-from src.mock.wallet import connect_wallet
 from fastapi import Request
-
-# Modern glass UI with working credential check using JavaScript bridge
+from src.mock.wallet import connect_wallet
 
 def login_page():
     ui.add_head_html('''
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
     ''')
 
     ui.add_body_html('''
@@ -76,17 +75,6 @@ def login_page():
             transform: translateY(-2px);
         }
 
-        .social-icons a {
-            color: white;
-            font-size: 20px;
-            margin: 0 10px;
-            transition: all 0.3s;
-        }
-
-        .social-icons a:hover {
-            transform: scale(1.2);
-        }
-
         .forgot-password {
             color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
@@ -97,12 +85,16 @@ def login_page():
             color: white;
             text-decoration: underline;
         }
+                     
+     .container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
+        max-width: 500px !important;
+    }
     </style>
 
     <div class="container">
         <div class="glass-card text-center">
             <h2 class="mb-4">Welcome Back!</h2>
-            <p class="mb-4">Sign in to continue</p>
+            <p class="mb-4">Login with MetaMask and credentials</p>
 
             <form id="loginForm">
                 <div class="mb-3">
@@ -111,15 +103,15 @@ def login_page():
                 <div class="mb-3">
                     <input id="password" type="password" class="form-control" placeholder="Password" required>
                 </div>
-                <div class="mb-3 text-end">
-                    <a href="#" class="forgot-password">Forgot Password?</a>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-light w-100" id="connectBtn">🔗 Connect MetaMask</button>
                 </div>
+                <input type="hidden" id="wallet" />
                 <button type="submit" class="btn btn-login w-100 mb-3">Login</button>
 
                 <div class="social-icons mb-3">
                     <a href="#"><i class="fab fa-google"></i></a>
                     <a href="#"><i class="fab fa-facebook"></i></a>
-                    <a href="#"><i class="fab fa-twitter"></i></a>
                 </div>
 
                 <p class="mt-3">Don't have an account? <a href="#" class="forgot-password">Sign Up</a></p>
@@ -128,33 +120,50 @@ def login_page():
     </div>
 
     <script>
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const wallet = accounts[0];
+                    localStorage.setItem('wallet', wallet);
+                    document.getElementById('wallet').value = wallet;
+                    alert('Wallet connected: ' + wallet);
+                } catch (err) {
+                    alert('MetaMask connection failed: ' + err.message);
+                }
+            } else {
+                alert('MetaMask not detected. Please install it.');
+            }
+        });
+
         document.getElementById('loginForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const wallet = document.getElementById('wallet').value;
+
+            if (!wallet) {
+                alert('Please connect MetaMask before logging in!');
+                return;
+            }
+
             fetch('/api/handle_login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            }).then(res => res.json()).then(data => {
-                if (data.success) {
-                    window.location.href = '/dashboard';
-                } else {
-                    window.alert('Invalid credentials');
-                }
-            });
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ email, password, wallet })
+                                    })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        console.log('Login API result:', data);
+                                        if (data.success) {
+                                            window.location.href = '/dashboard';
+                                        } else {
+                                            alert('Login failed. Check credentials or wallet.');
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error('Error parsing response:', err);
+                                    });
         });
     </script>
     ''')
-
-    @app.get("/api/handle_login")
-    async def get_handler():
-        return {'message': 'GET not supported'}
-
-    @app.post("/api/handle_login")
-    async def handle_login(request: Request):
-        return {'success': True}
-        data = await request.json()
-        if data['email'] == 'engineer@gmail.com' and data['password'] == '1234':
-            connect_wallet('0x1234abcd')
-            return {'success': True}
