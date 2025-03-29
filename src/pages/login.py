@@ -1,7 +1,7 @@
 from nicegui import ui, app
-from fastapi import Request
-from src.mock.wallet import connect_wallet
+import requests
 
+# Modern login page with role selection and MetaMask-like flow
 def login_page():
     ui.add_head_html('''
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -23,13 +23,11 @@ def login_page():
             justify-content: center;
             align-items: center;
         }
-
         @keyframes gradient {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-
         .glass-card {
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
@@ -38,10 +36,9 @@ def login_page():
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             border: 1px solid rgba(255, 255, 255, 0.18);
             width: 100%;
-            max-width: 400px;
+            max-width: 500px;
             color: white;
         }
-
         .form-control {
             background: rgba(255, 255, 255, 0.2);
             border: none;
@@ -49,17 +46,14 @@ def login_page():
             color: white;
             padding: 12px 20px;
         }
-
         .form-control::placeholder {
             color: rgba(255, 255, 255, 0.7);
         }
-
         .form-control:focus {
             background: rgba(255, 255, 255, 0.3);
             color: white;
             box-shadow: none;
         }
-
         .btn-login {
             background: rgba(255, 255, 255, 0.3);
             border: none;
@@ -69,26 +63,22 @@ def login_page():
             font-weight: 600;
             transition: all 0.3s;
         }
-
         .btn-login:hover {
             background: rgba(255, 255, 255, 0.5);
             transform: translateY(-2px);
         }
-
         .forgot-password {
             color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             font-size: 14px;
         }
-
         .forgot-password:hover {
             color: white;
             text-decoration: underline;
         }
-                     
-     .container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
-        max-width: 500px !important;
-    }
+        .container {
+            max-width: 500px !important;
+        }
     </style>
 
     <div class="container">
@@ -102,6 +92,14 @@ def login_page():
                 </div>
                 <div class="mb-3">
                     <input id="password" type="password" class="form-control" placeholder="Password" required>
+                </div>
+                <div class="mb-3">
+                    <select id="role" class="form-control" required>
+                        <option value="">Select Role</option>
+                        <option value="engineer">Engineer</option>
+                        <option value="installer">Installer</option>
+                        <option value="director">Director</option>
+                    </select>
                 </div>
                 <div class="mb-3">
                     <button type="button" class="btn btn-light w-100" id="connectBtn">🔗 Connect MetaMask</button>
@@ -141,6 +139,7 @@ def login_page():
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const wallet = document.getElementById('wallet').value;
+            const role = document.getElementById('role').value;
 
             if (!wallet) {
                 alert('Please connect MetaMask before logging in!');
@@ -148,22 +147,21 @@ def login_page():
             }
 
             fetch('/api/handle_login', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ email, password, wallet })
-                                    })
-                                    .then(res => res.json())
-                                    .then(data => {
-                                        console.log('Login API result:', data);
-                                        if (data.success) {
-                                            window.location.href = '/dashboard';
-                                        } else {
-                                            alert('Login failed. Check credentials or wallet.');
-                                        }
-                                    })
-                                    .catch(err => {
-                                        console.error('Error parsing response:', err);
-                                    });
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, wallet, role })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/dashboard/${data.role}`;
+                } else {
+                    alert('Login failed. Check credentials or wallet.');
+                }
+            })
+            .catch(err => {
+                console.error('Error during login:', err);
+            });
         });
     </script>
     ''')

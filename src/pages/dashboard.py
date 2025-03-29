@@ -7,7 +7,6 @@ def dashboard_page():
     wallet = app.storage.user.get('wallet', 'Not connected')
     email = app.storage.user.get('email', 'Unknown user')
 
-    # ✅ Safe to use UI function now
     if wallet != 'Not connected':
         connect_wallet(wallet)
 
@@ -42,7 +41,18 @@ def dashboard_page():
                 with ui.row().classes('gap-4 mb-6 justify-center'):
                     ui.button('📂 View Documents', on_click=lambda: ui.navigate.to('/documents')).classes('bg-blue-500 text-white px-4 py-2 rounded-xl')
                     ui.button('🎨 View Minted NFTs', on_click=lambda: ui.navigate.to('/nfts')).classes('bg-purple-600 text-white px-4 py-2 rounded-xl')
-                    ui.button('🔒 Logout', on_click=lambda: ui.navigate.to('/logout')).classes('bg-gray-500 text-white px-4 py-2 rounded-xl')
+                    ui.button('🔒 Logout', on_click=lambda: ui.run_javascript('''
+                        localStorage.removeItem('wallet');
+                        if (typeof window.ethereum !== 'undefined') {
+                            window.ethereum.request({
+                                method: 'wallet_requestPermissions',
+                                params: [{ eth_accounts: {} }]
+                            }).catch(console.warn);
+                        }
+                        window.location.href = '/';
+                    ''')).classes('bg-gray-500 text-white px-4 py-2 rounded-xl')
+
+
 
             with ui.card().classes('w-full p-6 bg-white shadow-md rounded-xl mt-6'):
                 ui.label('📑 Project Metadata & Document Upload').classes('text-2xl font-semibold text-blue-800 mb-4')
