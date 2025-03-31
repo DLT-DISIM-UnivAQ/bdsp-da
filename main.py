@@ -1,18 +1,24 @@
 from nicegui import ui
 from src.pages.login import login_page
-from src.dashboard.engineer import dashboard_engineer
+# from src.dashboard.engineer import dashboard_engineer
 from src.dashboard.installer import dashboard_installer
 from src.dashboard.director import dashboard_director
-from src.pages.upload import upload_page
 from src.pages.nfts import nfts_page
 from src.pages.documents import documents_page
 from src.auth.auth_roles import get_user, clear_user
+from src.dashboard.engineer.dashboard_overview import dashboard_engineer  
+from src.dashboard.engineer.document_upload import document_upload
+
+
 import src.auth.auth 
 import secrets
 secret = secrets.token_urlsafe(32)
 
+
+
 # --- PUBLIC PAGE ---
 ui.page('/')(login_page)
+ui.page('/upload')(document_upload)
 
 # --- ROLE-SPECIFIC DASHBOARDS ---
 @ui.page('/dashboard/engineer')
@@ -20,6 +26,7 @@ def render_engineer_dashboard():
     user = get_user()
     if user and user.get('role') == 'engineer':
         dashboard_engineer()
+
     else:
         clear_user()
         ui.navigate.to('/')
@@ -32,7 +39,7 @@ def render_installer_dashboard():
     else:
         clear_user()
         ui.navigate.to('/')
-        
+
 @ui.page('/dashboard/director')
 def render_director_dashboard():
     user = get_user()
@@ -48,7 +55,7 @@ def render_director_dashboard():
         ui.navigate.to('/')
 
 # --- SHARED OR RESTRICTED PAGES ---
-ui.page('/upload')(upload_page)
+
 ui.page('/nfts')(nfts_page)
 ui.page('/documents')(documents_page)
 

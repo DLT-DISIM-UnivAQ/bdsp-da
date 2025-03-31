@@ -1,22 +1,25 @@
-# src/auth/roles_auth.py
 from nicegui import ui, app
 
+ROLES = ['engineer', 'installer', 'director']
+
 PERMISSIONS = {
-    'engineer': ['upload_docs', 'edit_docs', 'delete_docs', 'submit_to_admin'],
+    'engineer': [
+        'dashboard_overview',
+        'document_submission',
+        'document_upload',
+        'document_validation',
+        'dwg_viewer',
+        'project_management'
+    ],
     'installer': ['upload_images', 'edit_images', 'delete_images', 'submit_to_admin'],
     'director': ['approve_docs', 'approve_images', 'mint_nft']
 }
 
-ROLES = ['engineer', 'installer', 'director']
-
 def get_user():
     user = app.storage.user
-    print('[DEBUG:get_user] Raw storage content:', user)
-
     if isinstance(user, dict) and user.get('role') in ROLES:
         return user
     return None
-
 
 def clear_user():
     app.storage.user.clear()
@@ -31,7 +34,7 @@ from functools import wraps
 
 def require_permission(permission):
     def decorator(func):
-        @wraps(func)  # ✅ Preserve metadata and function signature
+        @wraps(func)
         def wrapper(*args, **kwargs):
             user = get_user()
             if not user or permission not in PERMISSIONS.get(user.get('role'), []):
