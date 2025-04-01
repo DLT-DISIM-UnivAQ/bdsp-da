@@ -4,20 +4,23 @@ import uuid
 import json
 import requests
 from datetime import datetime
+import os
 
 STORAGE_KEY = 'uploaded_documents'
 PINATA_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIwN2QzZTM1NS1hMWE2LTQwMDktOWFhOC02NmEzODk0ZmQ2ZDQiLCJlbWFpbCI6ImFzaWZzYWVlZC5jc3BAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6ImM5NjZlNGE3ZWI2NGYwOThiNDQwIiwic2NvcGVkS2V5U2VjcmV0IjoiZjE1MjU0NjFiYTQ1YjA1NTRhNDk0NmQ2NWRiYWRmYzgxNTEyNzk5ODhhNjUwNzhhYWQzNWNmZDMyOTg0YThhZCIsImV4cCI6MTc3NDk1NTA0MX0.0_e_eVPL_TPiiXrd4wyF0rQ0fUvllMezbaLPREuLwXw'  # Replace with full JWT
 PINATA_UPLOAD_URL = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
 
+DOCUMENTS_FILE = 'uploaded_documents.json'
+
 def load_documents():
-    try:
-        raw = ui.storage.local.get(STORAGE_KEY) or '[]'
-        return json.loads(raw)
-    except Exception:
+    if not os.path.exists(DOCUMENTS_FILE):
         return []
+    with open(DOCUMENTS_FILE, 'r') as f:
+        return json.load(f)
 
 def save_documents(documents):
-    ui.storage.local[STORAGE_KEY] = json.dumps(documents)
+    with open(DOCUMENTS_FILE, 'w') as f:
+        json.dump(documents, f, indent=2)
 
 def upload_to_ipfs(file_obj):
     headers = {
@@ -72,6 +75,9 @@ def document_upload():
                 ui.notify(f"IPFS upload failed: {e}", color='negative')
                 return
 
+            file_size = len(file.content.read())
+            file.content.seek(0)
+
             doc_id = str(uuid.uuid4())
             document = {
                 'id': doc_id,
@@ -80,7 +86,7 @@ def document_upload():
                 'tags': doc['tags'].value,
                 'description': doc['description'].value,
                 'filename': file.name,
-                'size': file.size,
+                'size': file_size,
                 'ipfs_hash': ipfs_hash,
                 'ipfs_url': f"https://gateway.pinata.cloud/ipfs/{ipfs_hash}",
                 'uploaded_at': datetime.now().isoformat(),
