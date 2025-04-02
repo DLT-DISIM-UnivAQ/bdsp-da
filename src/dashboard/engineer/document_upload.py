@@ -1,16 +1,19 @@
 from nicegui import ui
-from src.auth.auth_roles import require_permission, get_user
+from datetime import datetime
+import os
 import uuid
 import json
 import requests
-from datetime import datetime
-import os
+from dotenv import load_dotenv
 
-PINATA_JWT = '.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIwN2QzZTM1NS1hMWE2LTQwMDktOWFhOC02NmEzODk0ZmQ2ZDQiLCJlbWFpbCI6ImFzaWZzYWVlZC5jc3BAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjQ0ZDQ2NTMzN2NhMDY1MjRkMjE5Iiwic2NvcGVkS2V5U2VjcmV0IjoiNzdiOWY5ZDgwMTQ1MzJhNjUzZTJmNjAzYThkZTAxYjc2NGJkMzhkYjhlNTFlY2IzNmJlYjFkOTQ0MmVlMDNkNCIsImV4cCI6MTc3NTA2NDYxOH0.JQXAqSzpQP2N9MaFjJhGmAqE7koaaVlugYcRFE-knFk'
-PINATA_UPLOAD_URL = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
-PINATA_JSON_URL = 'https://api.pinata.cloud/pinning/pinJSONToIPFS'
-DOCUMENTS_FILE = 'uploaded_documents.json'
-CONTRACT_ADDRESS = ''
+PINATA_JWT = os.getenv('PINATA_JWT')
+PINATA_UPLOAD_URL = os.getenv('PINATA_UPLOAD_URL')
+PINATA_JSON_URL = os.getenv('PINATA_JSON_URL')
+DOCUMENTS_FILE = os.getenv('DOCUMENTS_FILE')
+CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
+PLACEHOLDER_IMAGE = os.getenv('PLACEHOLDER_IMAGE')
+
+load_dotenv()
 
 def load_documents():
     if not os.path.exists(DOCUMENTS_FILE):
@@ -18,22 +21,25 @@ def load_documents():
     with open(DOCUMENTS_FILE, 'r') as f:
         return json.load(f)
 
+
 def save_documents(documents):
     with open(DOCUMENTS_FILE, 'w') as f:
         json.dump(documents, f, indent=2)
 
+
 def upload_file_to_ipfs(file_obj):
-    headers = {
-        'Authorization': f'Bearer {PINATA_JWT}',
-    }
-    files = {
-        'file': (file_obj.name, file_obj.content.read(), file_obj.type),
-    }
+    print(PINATA_JWT)
+    print(PINATA_JSON_URL)
+    print(DOCUMENTS_FILE)
+    print(PLACEHOLDER_IMAGE)
+    headers = {'Authorization': f'Bearer {PINATA_JWT}'}
+    files = {'file': (file_obj.name, file_obj.content.read(), file_obj.type)}
     response = requests.post(PINATA_UPLOAD_URL, headers=headers, files=files)
     if response.status_code == 200:
         return response.json()['IpfsHash']
     else:
         raise Exception(f"Failed to upload file to IPFS: {response.text}")
+
 
 def upload_json_to_ipfs(metadata):
     headers = {
@@ -46,16 +52,14 @@ def upload_json_to_ipfs(metadata):
     else:
         raise Exception(f"Failed to upload metadata to IPFS: {response.text}")
 
-@require_permission('document_upload')
+
 def document_upload():
-    user = get_user()
     uploaded_file = {'file': None}
-    document_list = ui.column().classes('w-full')
     preview_box = ui.column().classes('w-full')
+    document_list = ui.column().classes('w-full')
 
     with ui.column().classes('w-full items-center p-8'):
         ui.label('📤 Upload Project Document').classes('text-2xl font-bold text-blue-900 mb-4')
-        ui.label(f"Logged in as: {user['email']}").classes("text-sm text-blue-600 mb-4")
 
         doc = {
             'project_name': ui.input('Project Name').classes('w-full mb-2'),
@@ -68,11 +72,7 @@ def document_upload():
             uploaded_file['file'] = e
             ui.notify(f"Selected file: {e.name}", color='info')
 
-        ui.upload(
-            label='Upload DWG File',
-            multiple=False,
-            on_upload=on_file_upload
-        ).classes('w-full mb-4')
+        ui.upload(label='Upload DWG or Engineering File', multiple=False, on_upload=on_file_upload).classes('w-full mb-4')
 
         def handle_submit():
             file = uploaded_file['file']
@@ -81,24 +81,27 @@ def document_upload():
                 return
 
             try:
-                ipfs_hash = upload_file_to_ipfs(file)
-                file_url = f"https://gateway.pinata.cloud/ipfs/{ipfs_hash}"
+                file.content.seek(0)
+                file_ipfs_hash = upload_file_to_ipfs(file)
+                file_ipfs_url = f"https://beige-wooden-aardwolf-131.mypinata.cloud/ipfs/{file_ipfs_hash}"
+                file_ipfs_uri = f"ipfs://{file_ipfs_hash}"
 
                 metadata = {
                     "name": doc['document_name'].value,
                     "description": doc['description'].value,
-                    "tags": doc['tags'].value,
-                    "project": doc['project_name'].value,
-                    "file": file_url,
-                    "image": "https://via.placeholder.com/350x200.png?text=Document+Preview",  # Optional placeholder
+                    "external_url": file_ipfs_uri,
+                    "image": PLACEHOLDER_IMAGE,
                     "attributes": [
-                        {"trait_type": "Uploader", "value": user['email']},
-                        {"trait_type": "Size", "value": len(file.content.read())}
+                        {"trait_type": "Project", "value": doc['project_name'].value},
+                        {"trait_type": "Tags", "value": doc['tags'].value},
+                        {"trait_type": "Uploader", "value": "engineer@example.com"},
+                        {"trait_type": "File Name", "value": file.name},
                     ]
                 }
 
                 metadata_hash = upload_json_to_ipfs(metadata)
                 token_uri = f"ipfs://{metadata_hash}"
+                metadata_url = f"https://beige-wooden-aardwolf-131.mypinata.cloud/ipfs/{metadata_hash}"
 
                 file.content.seek(0)
                 doc_id = str(uuid.uuid4())
@@ -110,31 +113,30 @@ def document_upload():
                     'description': doc['description'].value,
                     'filename': file.name,
                     'size': len(file.content.read()),
-                    'ipfs_hash': ipfs_hash,
-                    'ipfs_url': file_url,
+                    'ipfs_url': file_ipfs_url,
                     'token_uri': token_uri,
                     'uploaded_at': datetime.now().isoformat(),
-                    'uploaded_by': user['email'],
+                    'uploaded_by': "engineer@example.com",
                 }
 
                 documents = load_documents()
                 documents.append(document)
                 save_documents(documents)
 
-                ui.notify('✅ Uploaded to IPFS! Now minting NFT via MetaMask...', color='positive')
-                ui.run_javascript(f"mintNFT('{token_uri}')")
-
                 preview_box.clear()
                 with preview_box:
-                    ui.label('🖼️ Preview Metadata').classes('text-lg font-bold text-blue-800')
+                    ui.label('🖼️ NFT Preview').classes('text-lg font-bold text-blue-800')
                     ui.markdown(f"""
                         **Name:** {metadata['name']}  
+                        **Project:** {doc['project_name'].value}  
                         **Description:** {metadata['description']}  
-                        **Tags:** {metadata['tags']}  
-                        **File:** [Open File]({file_url})  
-                        **Metadata:** [View Metadata](https://gateway.pinata.cloud/ipfs/{metadata_hash})  
+                        **File:** [Open IPFS File]({file_ipfs_url})  
+                        **Metadata:** [View JSON Metadata]({metadata_url})  
                     """)
                     ui.image(metadata['image']).style('max-width: 300px; margin-top: 10px')
+
+                ui.run_javascript(f"mintNFT('{token_uri}')")
+                ui.notify('✅ File uploaded, metadata created, NFT minting triggered!', color='positive')
 
                 document_list.clear()
                 with document_list:
@@ -146,7 +148,7 @@ def document_upload():
                             *Project:* {d['project_name']}  
                             *Uploaded by:* {d['uploaded_by']}  
                             *Date:* {d['uploaded_at'].split('T')[0]}  
-                            *[📄 View File]({d['ipfs_url']})* | *[🔗 Metadata]({d['token_uri'].replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/')})*
+                            *[📄 File]({d['ipfs_url']})* | *[🔗 Metadata]({d['token_uri'].replace('ipfs://', 'https://beige-wooden-aardwolf-131.mypinata.cloud/ipfs/')})*
                             """)
 
             except Exception as e:
@@ -154,22 +156,18 @@ def document_upload():
 
         ui.button('Upload and Mint NFT', on_click=handle_submit).classes('bg-blue-600 text-white px-4 py-2 rounded-xl')
 
-    # Inject the script once
     ui.add_body_html(f"""
     <script type="module">
     import {{ ethers }} from "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.esm.min.js";
-
     window.mintNFT = async function(tokenUri) {{
         if (!window.ethereum) {{
             alert("MetaMask is required!");
             return;
         }}
-
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         const signer = provider.getSigner();
         const userAddress = await signer.getAddress();
-
         const contractAddress = "{CONTRACT_ADDRESS}";
         const abi = [
             {{
@@ -185,9 +183,7 @@ def document_upload():
                 "type": "function"
             }}
         ];
-
         const contract = new ethers.Contract(contractAddress, abi, signer);
-
         try {{
             const tx = await contract.mint(userAddress, tokenUri);
             const receipt = await tx.wait();
@@ -200,3 +196,5 @@ def document_upload():
     </script>
     """)
 
+
+document_upload()
