@@ -15,8 +15,8 @@ const config: HardhatUserConfig = {
   },
   networks: {
     polygon: {
-      url: "https://polygon-mainnet.g.alchemy.com/v2/CzZJ3vpdWWnM9gNMTZj_tTwghXRRrGtr",
-      accounts: ["cec0c36752a19d30639c58e472d75a39b0f11c6470a1e8015f184947aa22f697"],
+      url: "https://polygon-mainnet.alchemy.com/v2/CzZJ3vpdWWnM9gNMTZj_tTwghXRRrGtr",
+      accounts: [""],
       gasPrice: 50_000_000_000, 
       timeout: 100000,          
     },
@@ -24,7 +24,7 @@ const config: HardhatUserConfig = {
   
 etherscan: {
   apiKey: {
-    polygon: "4FP4IG6XMJZRHGAU71WGT7Q6QG46Z5C39U",
+    polygon: "",
   },
 },
 };
