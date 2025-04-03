@@ -40,13 +40,41 @@ def upload_file_to_ipfs(file_obj):
     else:
         raise Exception(f"Failed to upload file to IPFS: {response.text}")
 
+def upload_file_to_ipfs(file_obj):
+    headers = {'Authorization': f'Bearer {PINATA_JWT}'}
+    
+    # Reset stream
+    file_obj.content.seek(0)
 
-def upload_json_to_ipfs(metadata):
+    # Use a fallback name if missing
+    safe_name = file_obj.name if file_obj.name else f"document-{uuid.uuid4()}.dwg"
+
+    files = {
+        'file': (safe_name, file_obj.content, file_obj.type or 'application/octet-stream')
+    }
+
+    response = requests.post(PINATA_UPLOAD_URL, headers=headers, files=files)
+    if response.status_code == 200:
+        return response.json()['IpfsHash']
+    else:
+        raise Exception(f"Failed to upload file to IPFS: {response.text}")
+    
+def upload_json_to_ipfs(metadata, original_filename='metadata'):
     headers = {
         'Authorization': f'Bearer {PINATA_JWT}',
         'Content-Type': 'application/json',
     }
-    response = requests.post(PINATA_JSON_URL, headers=headers, json=metadata)
+
+    filename = os.path.splitext(original_filename)[0] + 'JSON'
+
+    payload = {
+        "pinataMetadata": {
+            "name": filename
+        },
+        "pinataContent": metadata
+    }
+
+    response = requests.post(PINATA_JSON_URL, headers=headers, json=payload)
     if response.status_code == 200:
         return response.json()['IpfsHash']
     else:
@@ -85,9 +113,14 @@ def document_upload():
                 file_ipfs_hash = upload_file_to_ipfs(file)
                 file_ipfs_url = f"https://beige-wooden-aardwolf-131.mypinata.cloud/ipfs/{file_ipfs_hash}"
                 file_ipfs_uri = f"ipfs://{file_ipfs_hash}"
+                # Get safe document name
+                document_name = doc['document_name'].value.strip()
+                if not document_name:
+                    document_name = file.name  # fallback to uploaded filename
+                    print(document_name)
 
                 metadata = {
-                    "name": doc['document_name'].value,
+                    "name": document_name,
                     "description": doc['description'].value,
                     "external_url": file_ipfs_uri,
                     "image": PLACEHOLDER_IMAGE,
@@ -99,7 +132,7 @@ def document_upload():
                     ]
                 }
 
-                metadata_hash = upload_json_to_ipfs(metadata)
+                metadata_hash = upload_json_to_ipfs(metadata, file.name)
                 token_uri = f"ipfs://{metadata_hash}"
                 metadata_url = f"https://beige-wooden-aardwolf-131.mypinata.cloud/ipfs/{metadata_hash}"
 

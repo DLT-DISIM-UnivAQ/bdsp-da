@@ -1,7 +1,7 @@
 from nicegui import ui
 from src.pages.login import login_page
 # from src.dashboard.engineer import dashboard_engineer
-from src.dashboard.installer import dashboard_installer
+from src.dashboard.installer.installer_dashboard import dashboard_installer
 from src.dashboard.director import dashboard_director
 from src.pages.nfts import nfts_page
 from src.pages.documents import documents_page
