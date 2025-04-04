@@ -26,10 +26,10 @@ class InstallerImage(Base):
     id = Column(Integer, primary_key=True)
     site_name = Column(String)
     image_name = Column(String)
-    ipfs_url = Column(String, nullable=True)  # Will be set after Director approval
+    ipfs_url = Column(String, nullable=True)
     uploaded_by = Column(String)
     uploaded_at = Column(DateTime, default=datetime.datetime.utcnow)
-    image_data = Column(LargeBinary, nullable=True)  # <- store actual file bytes
+    image_data = Column(LargeBinary, nullable=True)
 
     # Metadata
     qr_text = Column(String)
@@ -41,6 +41,10 @@ class InstallerImage(Base):
     approved = Column(Boolean, default=False)
     approved_by = Column(String, nullable=True)
     approval_time = Column(DateTime, nullable=True)
+
+    # Submission flag
+    submitted = Column(Boolean, default=False)
+
 
 # Optional NFT table (if you want to track all minted items)
 class NFTMint(Base):

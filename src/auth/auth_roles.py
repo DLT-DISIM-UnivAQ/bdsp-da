@@ -12,7 +12,7 @@ PERMISSIONS = {
         'project_management'
     ],
     'installer': ['upload_images', 'edit_images', 'delete_images', 'submit_to_admin'],
-    'director': ['approve_docs', 'approve_images', 'mint_nft']
+    'director': ['approve_images', 'approve_images', 'mint_nft']
 }
 
 def get_user():
