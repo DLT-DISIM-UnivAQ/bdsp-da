@@ -11,9 +11,9 @@ def dashboard_installer():
 
         # 🔷 Navigation Tabs
         with ui.row().classes('mb-6 gap-4 justify-center'):
+            ui.button('📦 Inventory Check', on_click=lambda: ui.navigate.to('/installer/list')).props('flat').classes('bg-blue-100 text-blue-700')
             ui.button('📸 Upload Image', on_click=lambda: ui.navigate.to('/installer/upload')).props('flat').classes('bg-green-100 text-green-800')
             ui.button('🧾 Site Notes', on_click=lambda: ui.navigate.to('/installer/notes')).props('flat').classes('bg-yellow-100 text-yellow-800')
-            ui.button('📦 Inventory Check', on_click=lambda: ui.navigate.to('/installer/inventory')).props('flat').classes('bg-blue-100 text-blue-700')
             ui.button('📍 Assign Task', on_click=lambda: ui.navigate.to('/installer/tasks')).props('flat').classes('bg-purple-100 text-purple-800')
             ui.button('🔒 Logout', on_click=lambda: ui.run_javascript('''
                 localStorage.removeItem('wallet');

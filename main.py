@@ -2,6 +2,8 @@ from nicegui import ui
 from src.pages.login import login_page
 # from src.dashboard.engineer import dashboard_engineer
 from src.dashboard.installer.installer_dashboard import dashboard_installer
+from src.dashboard.installer.list import installer_image_list
+from src.dashboard.installer.upload import installer_image_upload
 from src.dashboard.director import dashboard_director
 from src.pages.nfts import nfts_page
 from src.pages.documents import documents_page
@@ -14,7 +16,8 @@ import src.auth.auth
 import secrets
 secret = secrets.token_urlsafe(32)
 
-
+from src.db.database import init_db
+init_db()
 
 # --- PUBLIC PAGE ---
 ui.page('/')(login_page)
@@ -40,6 +43,25 @@ def render_installer_dashboard():
         clear_user()
         ui.navigate.to('/')
 
+@ui.page('/installer/list')
+def render_installer_list():
+    user = get_user()
+    if user and user.get('role') == 'installer':
+        installer_image_list()
+    else:
+        clear_user()
+        ui.navigate.to('/')
+
+@ui.page('/installer/upload')
+def render_installer_list():
+    user = get_user()
+    if user and user.get('role') == 'installer':
+        installer_image_upload()
+    else:
+        clear_user()
+        ui.navigate.to('/')
+
+
 @ui.page('/dashboard/director')
 def render_director_dashboard():
     user = get_user()
@@ -60,6 +82,7 @@ ui.page('/nfts')(nfts_page)
 ui.page('/documents')(documents_page)
 
 # --- RUN APP ---
+
 ui.run(
     title='NICGUI Document Manager',
     port=8081,
