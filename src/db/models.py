@@ -11,14 +11,21 @@ Base = declarative_base()
 # Table for engineers
 class EngineerDocument(Base):
     __tablename__ = 'engineer_documents'
+
     id = Column(Integer, primary_key=True)
     project_name = Column(String)
     document_name = Column(String)
-    ipfs_url = Column(String)
-    token_uri = Column(String)
+    file_name = Column(String)
+    file_type = Column(String)
+    file_data = Column(LargeBinary)  # Binary file content
+    description = Column(Text)
+    tags = Column(String)
+    ipfs_url = Column(String, nullable=True)
+    token_uri = Column(String, nullable=True)
     uploaded_by = Column(String)
     uploaded_at = Column(DateTime, default=datetime.datetime.utcnow)
-    description = Column(Text)
+    minted = Column(String, default='No')  # 'Yes' or 'No'
+
 
 class InstallerImage(Base):
     __tablename__ = 'installer_images'

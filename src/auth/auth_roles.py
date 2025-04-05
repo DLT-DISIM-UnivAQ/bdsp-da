@@ -6,10 +6,12 @@ PERMISSIONS = {
     'engineer': [
         'dashboard_overview',
         'document_submission',
-        'document_upload',
+        'upload_documents',
         'document_validation',
         'dwg_viewer',
-        'project_management'
+        'project_management',
+        'mint_documents',
+        
     ],
     'installer': ['upload_images', 'edit_images', 'delete_images', 'submit_to_admin'],
     'director': ['approve_images', 'approve_images', 'mint_nft']
