@@ -12,7 +12,7 @@ load_dotenv()
 PINATA_JWT = os.getenv('PINATA_JWT')
 PINATA_UPLOAD_URL = os.getenv('PINATA_UPLOAD_URL')
 PINATA_JSON_URL = os.getenv('PINATA_JSON_URL')
-CONTRACT_ADDRESS = '0x3c0474DF86A9774103c0962cF4A71ECd1D7cd6BC'
+CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
 CUSTOM_GATEWAY = 'https://beige-wooden-aardwolf-131.mypinata.cloud/ipfs'
 PLACEHOLDER_IMAGE = 'https://via.placeholder.com/300x300.png?text=NFT'
 
