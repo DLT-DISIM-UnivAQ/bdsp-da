@@ -8,9 +8,9 @@ async function main() {
   const nft = await NFT.deploy();
 
   await nft.waitForDeployment(); 
-
   const contractAddress = await nft.getAddress();
-  console.log("NFT contract deployed at:", contractAddress);
+
+  console.log("✅ NFT contract deployed at:", contractAddress);
 }
 
 main().catch((error) => {

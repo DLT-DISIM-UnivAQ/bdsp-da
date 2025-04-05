@@ -1,25 +1,28 @@
-
 from nicegui import ui
 from datetime import datetime
-import base64, os, requests, json
+import os, requests, json
 from src.auth.auth_roles import require_permission, get_user
 from src.db.database import SessionLocal
 from src.db.models import EngineerDocument, NFTMint
+
+# Configuration
+
 from dotenv import load_dotenv
+from src.db.models import NFTMint  # make sure this import is at the top
 
 
-# ✅ Hardcoded for now
-PINATA_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIwN2QzZTM1NS1hMWE2LTQwMDktOWFhOC02NmEzODk0ZmQ2ZDQiLCJlbWFpbCI6ImFzaWZzYWVlZC5jc3BAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjQ0ZDQ2NTMzN2NhMDY1MjRkMjE5Iiwic2NvcGVkS2V5U2VjcmV0IjoiNzdiOWY5ZDgwMTQ1MzJhNjUzZTJmNjAzYThkZTAxYjc2NGJkMzhkYjhlNTFlY2IzNmJlYjFkOTQ0MmVlMDNkNCIsImV4cCI6MTc3NTA2NDYxOH0.JQXAqSzpQP2N9MaFjJhGmAqE7koaaVlugYcRFE-knFk'
-PINATA_UPLOAD_URL = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
-PINATA_JSON_URL = 'https://api.pinata.cloud/pinning/pinJSONToIPFS'
+# Load environment variables
+load_dotenv()
+PINATA_JWT = os.getenv('PINATA_JWT')
+PINATA_UPLOAD_URL = os.getenv('PINATA_UPLOAD_URL')
+PINATA_JSON_URL = os.getenv('PINATA_JSON_URL')
+CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS')
 PLACEHOLDER_IMAGE = 'https://via.placeholder.com/300x300.png?text=Document'
-CONTRACT_ADDRESS = '0x9238945EeEE12F466a7045d547303D90D5150831'
 CUSTOM_GATEWAY = 'https://beige-wooden-aardwolf-131.mypinata.cloud/ipfs'
-
 
 def upload_file_to_ipfs_bytes(file_bytes, name):
     headers = {'Authorization': f'Bearer {PINATA_JWT}'}
-    files = {'file': (name, file_bytes, 'application/pdf')}
+    files = {'file': (name, file_bytes, 'application/octet-stream')}
     res = requests.post(PINATA_UPLOAD_URL, headers=headers, files=files)
     if res.status_code == 200:
         return res.json()['IpfsHash']
@@ -48,9 +51,8 @@ def engineer_mint_documents():
 
     with ui.column().classes('w-full items-center p-8'):
         ui.label(f'🧪 Mint Engineering Documents - {user["email"]}').classes('text-2xl font-bold text-blue-800 mb-6')
-        ui.label(f'📚 Engineer Documents - {user["email"]}').classes('text-2xl font-bold text-blue-800 mb-6')
         ui.button('⬅️ Back to Dashboard', on_click=lambda: ui.navigate.to('/dashboard/engineer')).classes('mb-4 bg-gray-200 px-4 py-2 rounded')
-        ui.button('📄 Upload Document', on_click=lambda: ui.navigate.to('/engineer/upload')).classes('bg-green-100 text-green-800 px-4 py-2 rounded')
+        ui.button('📄 List Documents', on_click=lambda: ui.navigate.to('/engineer/list')).classes('bg-green-100 text-green-800 px-4 py-2 rounded')
         ui.button('🔒 Logout', on_click=lambda: ui.navigate.to('/')).classes('bg-gray-500 text-white px-4 py-2 rounded')
 
         if not documents:
@@ -62,19 +64,30 @@ def engineer_mint_documents():
                 with ui.column().classes('grow'):
                     ui.label(f"📄 {doc.document_name}").classes('text-md font-semibold text-blue-900')
                     ui.label(f"📁 Project: {doc.project_name}").classes('text-sm text-gray-700')
-                    ui.label(f"📝 {doc.description or 'No description provided'}").classes('text-sm text-gray-600')
                     ui.label(f"📅 Uploaded: {doc.uploaded_at.strftime('%Y-%m-%d')}").classes('text-xs text-gray-500')
+                    ui.label(f"📝 {doc.description or 'No description provided'}").classes('text-sm text-gray-600')
+
+                    # 📄 File Preview
+                    if doc.ipfs_url:
+                        ipfs_hash = doc.ipfs_url.split("/")[-1]
+                        file_url = f"{CUSTOM_GATEWAY}/{ipfs_hash}"
+                        if doc.document_name.lower().endswith('.pdf'):
+                            ui.link('📄 View PDF', file_url, new_tab=True).classes('text-blue-600')
+                            ui.html(f'<iframe src="{file_url}" width="100%" height="300px" style="border:1px solid #ccc;"></iframe>')
+                        elif doc.document_name.lower().endswith('.dwg') or doc.document_name.lower().endswith('.tcl'):
+                            ui.link(f'📄 Download {doc.document_name}', file_url, new_tab=True).classes('text-blue-600')
+                            ui.label('🔍 No preview available, click to download.').classes('text-sm text-gray-500')
+                        else:
+                            ui.link('📄 Open File', file_url, new_tab=True).classes('text-blue-600')
 
                 def mint_this_document(doc_to_mint=doc):
                     try:
-                        # Extract IPFS hash and build custom gateway URL
                         if not doc_to_mint.ipfs_url or "ipfs/" not in doc_to_mint.ipfs_url:
                             ui.notify(f"❌ Document '{doc_to_mint.document_name}' has invalid IPFS URL.", color='negative')
                             return
 
                         ipfs_hash = doc_to_mint.ipfs_url.split("/")[-1]
                         fixed_url = f"{CUSTOM_GATEWAY}/{ipfs_hash}"
-
                         file_bytes = requests.get(fixed_url).content
                         file_ipfs_hash = upload_file_to_ipfs_bytes(file_bytes, doc_to_mint.document_name)
                         file_ipfs_uri = f"ipfs://{file_ipfs_hash}"
@@ -94,7 +107,6 @@ def engineer_mint_documents():
                         metadata_hash = upload_json_to_ipfs(metadata, doc_to_mint.document_name)
                         token_uri = f"ipfs://{metadata_hash}"
 
-                        # Update DB
                         doc_to_mint.token_uri = token_uri
                         session.add(doc_to_mint)
                         session.add(NFTMint(
@@ -116,7 +128,7 @@ def engineer_mint_documents():
 
                 ui.button('🎯 Mint NFT', on_click=mint_this_document).classes('bg-blue-600 text-white px-3 py-1 rounded')
 
-        # Inject MetaMask minting script
+        # Inject MetaMask JS
         ui.add_body_html(f"""
         <script type="module">
         import {{ ethers }} from "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.esm.min.js";
