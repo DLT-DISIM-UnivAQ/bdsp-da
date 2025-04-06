@@ -79,18 +79,39 @@ def engineer_mint_documents():
                         file_bytes = requests.get(download_url).content
                         file_ipfs_hash = upload_file_to_ipfs_bytes(file_bytes, doc_to_mint.document_name)
                         file_ipfs_uri = f"ipfs://{file_ipfs_hash}"
+                        gateway_url = f"{CUSTOM_GATEWAY}/{file_ipfs_hash}"
+
+                        # 🎨 Determine image preview based on file type
+                        extension = doc_to_mint.document_name.lower().split('.')[-1]
+                       # Determine preview image
+                        if extension == 'pdf':
+                            image_preview_hash = 'bafkreigmgygyhdct2zf6qbgy2rbburbf4tgwmxyotwsrazv7ookawojm5u'
+                        elif extension == 'dwg':
+                            image_preview_hash = 'bafkreiclofpyxzeiv4wh3df5atuwr23exwojjs6dcwle24kbi4yzraa3cm'
+                        elif extension == 'tcl':
+                            image_preview_hash = 'bafkreidambn4nta2gkivozc4y2g6w65hsygufnlynf4z4fvj75d63sei2q'
+                        else:
+                            image_preview_hash = None  # fallback to placeholder
+
+                        # IPFS URIs
+                        # https://beige-wooden-aardwolf-131.mypinata.cloud/ipfs/bafkreiclofpyxzeiv4wh3df5atuwr23exwojjs6dcwle24kbi4yzraa3cm
+                        image_preview_ipfs_uri = f"{CUSTOM_GATEWAY}/ipfs/{image_preview_hash}" if image_preview_hash else PLACEHOLDER_IMAGE
+
 
                         metadata = {
-                            "name": doc_to_mint.document_name,
-                            "description": f"Engineering document titled '{doc_to_mint.document_name}' for project '{doc_to_mint.project_name}'.",
-                            "external_url": file_ipfs_uri,
-                            "image": PLACEHOLDER_IMAGE,
+                            "name":  f"📘Raiano - Building Files: {doc_to_mint.document_name}\n\n",
+                            "description": (
+                                f"📘 Engineering document for project: {doc_to_mint.project_name}\n\n"
+                                f"📘 {doc_to_mint.description}\n\n"
+                                f"🔗 View: {gateway_url}"
+                            ),
+                            "image": image_preview_ipfs_uri,
+                            "animation_url": gateway_url,
                             "attributes": [
                                 {"trait_type": "Project", "value": doc_to_mint.project_name},
-                                {"trait_type": "Uploader", "value": doc_to_mint.uploaded_by},
-                                {"trait_type": "Date", "value": doc_to_mint.uploaded_at.strftime('%Y-%m-%d')},
-                                {"trait_type": "Type", "value": "Engineering Document"},
-                                {"trait_type": "File", "value": doc_to_mint.document_name}
+                                {"trait_type": "Type", "value": extension.upper()},
+                                {"trait_type": "Uploader", "value": "Engineer of Building Document Dossier"},
+                                {"trait_type": "Upload Date", "value": doc_to_mint.uploaded_at.strftime('%Y-%m-%d')}
                             ]
                         }
 
@@ -115,6 +136,7 @@ def engineer_mint_documents():
 
                     except Exception as e:
                         ui.notify(f"❌ Error: {str(e)}", color='negative')
+
 
                 ui.button('🎯 Mint NFT', on_click=mint_this_document).classes('bg-blue-600 text-white px-3 py-1 rounded')
 

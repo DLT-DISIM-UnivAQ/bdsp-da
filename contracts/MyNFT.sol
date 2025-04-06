@@ -8,7 +8,7 @@ contract MyNFT is ERC721URIStorage {
 
     event NFTMinted(address indexed recipient, uint256 tokenId, string tokenURI, string purpose);
 
-    constructor() ERC721("BuildingDocumentNFT", "BDNFT") {}
+    constructor() ERC721("BuildingLedgerDossier", "BDNFT") {}
 
     function mint(address recipient, string memory tokenURI, string memory purpose) public returns (uint256) {
         uint256 newTokenId = _tokenIds;

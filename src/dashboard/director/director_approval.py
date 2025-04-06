@@ -67,19 +67,26 @@ def director_approval():
                         ipfs_image_uri = f"ipfs://{ipfs_image_hash}"
                         ipfs_image_url = f"{CUSTOM_GATEWAY}/{ipfs_image_hash}"
 
+                        unique_id = f"{image.image_name}-{datetime.now().timestamp()}"  # ensures metadata uniqueness
+
                         metadata = {
-                            "name": image.image_name,
-                            "description": f"Installation photo from site {image.site_name}",
+                            "name": f"{image.site_name} - {image.image_name}",
+                            "description": f"📍 Plate captured at the construction site '{image.site_name}' as part of the Building Ledger Dossier. This NFT preserves visual evidence for project compliance and audit.",
                             "image": ipfs_image_uri,
+                            # "external_url": f"https://yourprojectdomain.xyz/view/{image.image_name}",
+                            "background_color": "e6f0ff",
                             "attributes": [
                                 {"trait_type": "Site", "value": image.site_name},
-                                {"trait_type": "QR Code", "value": image.qr_text},
-                                {"trait_type": "GPS", "value": f"{image.gps_lat}, {image.gps_lng}"},
-                                {"trait_type": "Uploaded By", "value": image.uploaded_by}
+                                {"trait_type": "Coordinates", "value": f"{image.gps_lat}, {image.gps_lng}"},
+                                {"trait_type": "QR Code", "value": image.qr_text or "N/A"},
+                                {"trait_type": "Approved By", "value": "Director of Building Ledger Dossier"},
+                                {"trait_type": "Uploaded By", "value": "Director of Building Ledger Dossier"},
+                                {"trait_type": "File Name", "value": image.image_name},
+                                {"trait_type": "Contract", "value": "Building Ledger Dossier"},
                             ]
                         }
 
-                        metadata_hash = upload_json_to_ipfs(metadata, image.image_name)
+                        metadata_hash = upload_json_to_ipfs(metadata, unique_id)
                         token_uri = f"ipfs://{metadata_hash}"
                         metadata_url = f"{CUSTOM_GATEWAY}/{metadata_hash}"
 
