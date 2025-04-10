@@ -23,6 +23,7 @@ def dashboard_engineer():
             ui.button('📄 Upload Document', on_click=lambda: ui.navigate.to('/engineer/upload')).classes('bg-green-100 text-green-800 px-4 py-2 rounded')
             ui.button('📁 Document List', on_click=lambda: ui.navigate.to('/engineer/list')).classes('bg-blue-100 text-blue-700 px-4 py-2 rounded')
             ui.button('🔒 Logout', on_click=lambda: ui.navigate.to('/')).classes('bg-gray-500 text-white px-4 py-2 rounded')
+            ui.button('🔓 Decrypt URL', on_click=lambda: ui.navigate.to('/decrypt_gateway_url')).props('flat').classes('ml-4')
 
         with ui.row().classes('w-full justify-around'):
             with ui.card().classes('bg-white shadow-xl p-6 rounded-xl w-1/5'):
